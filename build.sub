@@ -1,0 +1,11 @@
+log = build.log
+
+transfer_input_files = conda.def
+
++IsBuildJob = True
+
+request_cpus = 4
+request_memory = 8 GB
+request_disk = 16 GB
+
+queue

@@ -1,0 +1,7 @@
+Bootstrap: docker
+From: condaforge/miniforge3:latest
+
+%post
+    conda config --add channels bioconda
+    conda config --set channel_priority strict
+    conda install samtools python=3.10 numpy=1.26 scipy seaborn

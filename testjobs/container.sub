@@ -1,0 +1,16 @@
+log = no-container.log
+
+container_image = osdf:///chtc/staging/yourNetID/conda.sif
+
+transfer_input_files = test.sh
+
+shell = ./test.sh
+output = no-container.out
+error = no-container.err
+
+request_cpus = 1
+request_memory = 1GB
+request_disk = 4GB
+
+queue
+
