@@ -1,58 +1,68 @@
-# Tutorial: Getting Started with Containers
+# Bioinformatics Cafe: Containers
 
-*This tutorial covers the basics of how to use containers to deploy software on the OSPool.*
+*This tutorial covers the basics of how to use containers to deploy software.*
 
 ## Setup
 
-1. Login to [osg-htc.org/notebooks](https://osg-htc.org/notebooks).
-2. Launch the "Guest" notebook option.
-3. Navigate to the directory `tutorial-containers`.
-4. Open the notebook `tutorial-containers.ipynb`.
-5. Follow the instructions in the notebook.
+1. Login to the HTC system, 
+
+   ```
+   ssh yourNetID@ap2001.chtc.wisc.edu
+   ```
+
+   or
+
+   ```
+   ssh yourNetID@ap2002.chtc.wisc.edu
+   ```
+
+   For more instructions, [read this guide](https://chtc.cs.wisc.edu/uw-research-computing/connecting)
+
+2. Clone this repository.
+
+   ```
+   git clone github.com/chtc/biocafe-containers
+   ```
+
+3. Move into the new folder.
+
+   ```
+   cd biocafe-containers
+   ```
+
+4. Start an interactive build job by running
+
+   ```
+   condor_submit -i build.sub
+   ```
 
 ## Materials
 
-* Slides: [tinyurl.com/yc3wz349](https://tinyurl.com/yc3wz349)
-* Notebook: [tutorial-containers.ipynb](/tutorial-containers.ipynb)
-* GitHub: [github.com/osg-htc/tutorial-containers](https://github.com/osg-htc/tutorial-containers.git)
+* Slides: [TBD](TBD)
+* GitHub: [TBD](TBD)
 
-## Disclaimer
-
-The content of this training represents the practical, cumulative hands-on experience of someone who 
-
-* does not have a background in computer science
-* is not a professional programmer
-* is not a developer of container technologies
-
-As such, there may be inaccuracies in technical details and mental models of containers, their functionality, and their implementation.
-
-# Quickstart: The Power of Containers
+## Quickstart: The Power of Containers
 
 *A short hands-on exercise demonstrating how containers can be useful.*
 
 Let's say that you need to use Python 3.10 for your research program.
 
-First, check the version of Python available in the OSPool Notebook:
-
+First, check the version of Python available in the interactive job:
 
 ```bash
 python3 --version
 ```
 
-You should see Python 3.13.
+You should see Python 3.9.19.
 
 Next, let's "build" a container.
 For now, just run the provided commands - we'll discuss what each one is doing later in the training.
-
 
 ```bash
 apptainer build python310.sif docker://python:3.10
 ```
 
-(There may be a lot of lines due to the progress bars.)
-
 When it is done, there is a new file `python310.sif`:
-
 
 ```bash
 ls -lh python310.sif
@@ -62,7 +72,6 @@ Now that you have the `.sif` file of the container, you can use it as an executi
 
 Let's see what version of Python is available in this container:
 
-
 ```bash
 apptainer exec python310.sif python3 --version
 ```
@@ -71,15 +80,15 @@ It's Python 3.10!
 
 Things to note:
 
-* You did not install Python 3.10 in the notebook
-* You did not remove Python 3.13 from the notebook
+* You did not install Python 3.10 on the execution point
+* You did not remove Python 3.13 from the execution point
 * Anywhere you have the `python310.sif` file (and Apptainer installed), you can do the same thing!
 
 Furthermore, you can set up a container with the software you want to use.
 
 The takeaway is: **Containers are portable, reproducible software environments that you control.**
 
-# Core Concepts
+## Core Concepts
 
 *A simplified mental model for working with containers.*
 
@@ -115,7 +124,7 @@ This description of a movie is analogous to how containers work.
 > In the same way that the word **movie** can be used to refer to the physical media (the **film**, DVD, etc.) or the sequence of images on the screen,
 > so too can the word **container** be used to refer to the **container image** or the actively running environment.
 
-# Lifecycle for Deploying Software in Containers
+## Lifecycle for Deploying Software in Containers
 
 *An overview of the step-by-step process of working with containers.*
 
@@ -135,10 +144,9 @@ Three phases to building containers:
 * **Phase 2 - Build**
 * **Phase 3 - Execute**
 
-
 > In principle, Phases 1 & 2 are one-time only!
 
-## Phase 1 - Setup
+### Phase 1 - Setup
 
 1. **Identify** the "main" software you want to deploy.
 2. Find the **installation instructions** for the software you want to deploy.
@@ -148,7 +156,7 @@ Three phases to building containers:
    * A good rule is that the "base" container image should already include the most-difficult-to-install software that you need
    * **Note**: some developers publish official container images for their software!
 
-## Phase 2 - Build
+### Phase 2 - Build
 
 4. **Write a definition file**, containing the installation commands for the software you want
 5. **Build the container image**
@@ -156,39 +164,39 @@ Three phases to building containers:
 6. **Test** that the software in the container image works as expected
    * A "successful" build doesn't mean the software is working!
   
-## Phase 3 - Execute
+### Phase 3 - Execute
 
 7. **Distribute** the container image where it needs to go
 8. **Use** the container image
 
+## Example: A More Realistic Container
 
-# Example: A More Realistic Python Container
-
-*A hands-on exercise for a practical example involving Python.*
+*A hands-on exercise for a practical example involving Conda.*
 
 You are starting a new computational research project and have identified the "main" software that you want to deploy.
 
 The program is a collection of scripts in a GitHub repository.
-The README states that is requires **`python` v3.10**, as well as the Python packages **`numpy` (v1.26)** and **`scipy`.**
+The README states that is requires **`samtools`** as well as **`python` v3.10** and the Python packages **`numpy` (v1.26)** and **`scipy`.**
 They provide some commands to run that *should* fulfill the requirements:
 
 ```
-sudo apt-get install python3 python3-pip
-pip install numpy scipy
+conda install samtools python=3.10 numpy=1.26 scipy
 ```
 
-For your own purposes, you also want to use the Python package **`seaborn`**. 
+For your own purposes, you also want to use **`bwa`** and the Python package **`seaborn`**. 
 
 **How should you proceed?**
 
-## Phase 1 - Setup
+### Phase 1 - Setup
 
-### What do you need?
+#### What do you need?
 
 First, list out what you need. 
 
 For the above scenario, you need:
 
+* samtools
+* bwa
 * python v3.10
 * python packages:
     * numpy v1.26
@@ -197,57 +205,60 @@ For the above scenario, you need:
 
 > We're going to ignore the GitHub repository itself for now; more discussion later.
 
-### Installation instructions
+#### Installation instructions
 
-Installing a Python package (once you have Python), is fairly easy, you just need to run
+The `conda install` command from the GitHub readme file should get you most of the way.
+Since `seaborn` is just another Python package, Conda should have no trouble finding it.
 
-```
-python3 -m pip install <package1>==<version> <package2> <etc...>
-```
+The only remaining item then is `bwa`.
+How can we install that?
 
-Now you just need to figure out how to get Python set up.
-While you could install Python in a container from scratch, that is usually unnecessary.
+You could try looking up the `bwa` source code, but unless you have a lot of experience installing stuff on Linux, it won't be clear how to proceed.
 
-### A good starting point
+Instead, you should check out if `bwa` is available through the "Bioconda" channel.
+Bioconda ([bioconda.github.io](https://bioconda.github.io)) is a source for biomedical software packages that can be installed by Conda.
+You can search their packages [here](https://bioconda.github.io/conda-package_index.html).
+
+A search of Bioconda for `bwa` does indeed return a match, so as long as we know how to install packages from Bioconda using Conda, we're good to go.
+Getting Conda to use packages from Bioconda requires only a line or two of config.
+
+Altogether, that means if we can get Conda set up, then we can install everything else we need using Conda.
+
+#### A good starting point
 
 Choosing a good base image can save a lot of time.
 
-Considering the software requirements, if you are able to get `python` set up, then you should be able to use the `pip` command to install additional Python packages.
+For information on how to find an official container, see the "Finding container images" section in Appendix B at the end of this document.
 
-In this case, **a good base container would come with `python` v3.10 already installed.**
+Since everything we need can be installed using Conda, then **a good base container would come with `conda` already installed.**
 
-For information on how to find an official container, see the "Finding container images" section in Appendix B at the end of this notebook.
+If you are a fan of open source software, like we are, then you will want to use Conda-Forge ([conda-forge.org](https://conda-forge.org)).
+Conda-Forge publishes an official container that provides Conda.
 
-**TL;DR: you want to use `docker://python:3.10` as the base image for your container.**
+**TL;DR: you want to use `docker://condaforge/miniforge3:latest` as the base image for your container.**
 
-## Phase 2 - Build
+### Phase 2 - Build
 
-### Write the definition file
+#### Write the definition file
 
 *The exact format of the definition file depends on the container technology that you are using.*
 
 We are focusing on the [Apptainer](https://apptainer.org/) container program, which is open source and designed for shared computing systems (and arguably more beginner friendly).
 
-**Create a new file called `my-container.def` with the following contents:**
-
-```
-Bootstrap: docker
-From: python:3.10
-
-%post
-    python3 -m pip install numpy==1.26 scipy seaborn
-```
-
-Make sure to save the file!
-
-> Note: you do not need to use `sudo` for the installation commands in the `%post` section!
-
-Run the following command and confirm the contents are the same:
-
+We've already written the definition file that you will need for this training.
+Take a look at its contents by running
 
 ```bash
-cat my-container.def
+cat conda.def
 ```
+
+There are a couple parts to the file:
+
+1. **Header** - this section defines the starting point for your container build
+2. **`%post` commands** - this section has the installation commands you want included in the final result
+
+   * The `conda config` commands enable Bioconda as a source for packages
+   * The `conda install` command actually installs the packages
 
 > For a full breakdown of the parts of an Apptainer definition file, see
 >
@@ -256,9 +267,9 @@ cat my-container.def
 >
 > Additional tips are provided in Appendix B of this notebook.
 
-### Build the container
+#### Build the container
 
-At this point, you've written the script for the movie.
+At this point, the script for the movie is written.
 Now you need to record it to film.
 
 To build an Apptainer container, you use the command
@@ -272,12 +283,11 @@ apptainer build <desired_name> <definition_file>
 
 For our example, that means the command to run is
 
-
 ```bash
-apptainer build my-container.sif my-container.def
+apptainer build conda.sif conda.def
 ```
 
-You will say a lot of output here, mostly because progress bars don't render "normally" in a Jupyter notebook.
+The output of this command details the container build process, including the installation commands.
 
 1. First, Apptainer **obtains the base container**, in this case by downloading it from DockerHub.
 
@@ -286,12 +296,8 @@ You will say a lot of output here, mostly because progress bars don't render "no
 2. Next, Apptainer **runs the `%post` section commands** of the definition file.
 
    This section is separated from the previous by the `INFO: Running post scriptlet` line. 
-   If you are familiar with `pip install` commands, the output is the almost exactly the same as usual!
+   If you are familiar with `conda install` commands, the output is the almost exactly the same as usual!
 
-   > When building a container, you can ignore the warning from pip about running as 'root'.
-   > You should totally heed that warning if you aren't building a container!
-
-   
    > In the quickstart, this middle step was skipped 
 
 3. Finally, once the `%post` commands have all run (typically "successfully"), Apptainer **records the results as a `SIF` formatted file.**
@@ -302,77 +308,85 @@ Confirm that the container image has been created by running:
 
 
 ```bash
-file my-container.sif
+file conda.sif
 ```
 
-## Phase 3 - Execute
-
-For the purposes of this training, "testing" is the same as "executing" the container.
-
-### Test/use the container
+#### Test/use the container
 
 It's always good practice to review the final product. 
 
-You can execute commands one at a time using the `apptainer exec` command, which is what we used in the Quickstart section.
-The syntax is
-
-```
-apptainer exec <image_name> <command_to_run>
-```
-
-In general, if you can "import" a package or print the program's help text, that means the program has been successfully installed.
-(But whether it does what you want is a separate question!)
-
-Run the following command to check that the desired packages have been installed:
-
-
-```bash
-apptainer exec my-container.sif python3 -c 'import numpy, scipy, seaborn; print("numpy =",numpy.__version__); print("scipy =",scipy.__version__); print("seaborn =",seaborn.__version__)'
-```
-
-You should see 
-
-```
-numpy = 1.26.0
-scipy = 1.15.3
-seaborn = 0.13.2
-```
-
-For more involved tests or commands, it's better to write a short script with the commands you want to use and then execute them inside the container.
-We've provided the script `python-test.py` for this purpose.
-
-Run the test script inside the container using the following command:
-
-
-```bash
-apptainer exec my-container.sif python3 python-test.py
-```
-
-To run commands in the container environment interactively, you can use the `shell` command:
+You can use the `shell` command to interact with the container directly:
 
 ```
 apptainer shell my-container.sif
 ```
 
-This doesn't work well in Jupyter notebooks, however.
-To try it, first open a new "terminal" tab in the Jupyter notebook.
-Then run the `apptainer shell my-container.sif` command.
+After running this command, your command prompt will appear as `Apptainer>`.
+Now the commands that you run will use the environment provided by your container image.
 
-The commands you run will be executed in the container environment.
-When you are done, enter
+In general, if you can get the "help" text for a command or load a package, it is a strong indication that the software was installed as expected.
 
+Let's check that the Bioconda tools were installed. First let's check `samtools` by running
+
+```bash
+samtools --help
 ```
+
+You should see the help text explaining how to use the `samtools` command.
+
+Next, let's check for `bwa` by running
+
+```bash
+bwa --help
+```
+
+You should see the help text explaing how to use the `bwa` command.
+
+Then we'll confirm that the version of Python is 3.10, as we require.
+
+```bash
+python3 --version
+```
+
+We should see version `3.10`; we won't worry about the particular "patch" version that is reported after the second decimal point.
+
+Then we'll launch a Python console so that we can import the Python packages we installed.
+
+```bash
+python3
+```
+
+This opens the interactive Python console. Now we can run our desired Python commands:
+
+```python3
+import numpy, scipy, seaborn
+
+print(f"numpy = {numpy.__version__}")
+print(f"scipy = {scipy.__version__}")
+print(f"seaborn = {seaborn.__version__}")
+```
+
+(You should be able to copy/paste all lines at once, or you can do one line at a time.)
+
+You should see that `numpy` is `1.26`, but there's no guarantee about what versions `scipy` and `seaborn` will have since we did not declare a specific version for these packages in our `conda install` command.
+
+When you are done running Python test commands, run
+
+```python3
+exit()
+```
+
+When you are done testing the container image, enter
+
+```bash
 exit
 ```
 
 to exit the interactive shell mode.
 
-***Do not evaluate any notebook cells while the `apptainer shell` is active!***
-Jupyter and `apptainer shell` don't play well together and you may get weird errors otherwise!
-
 > In general, **anywhere** you have Apptainer, you can run the above commands to reproduce the software environment you created in your container!
 
-## Putting scripts in the container
+### Putting scripts in the container
 
 *How should you get those scripts into the container image?*
 
@@ -384,7 +398,7 @@ First, you have to answer this question: when should the scripts be placed insid
 1. During the build phase
 2. During the execution phase
 
-### Adding scripts during the build phase
+#### Adding scripts during the build phase
 
 **This option is for "mature" programs** - that is, something that you don't plan to modify after the build phase is complete and the container image has been created. 
 Maybe you'll make changes, but you can plan on repeating the build phase to create a new container image in that case.
@@ -393,14 +407,14 @@ To add files to the container build, you can use the `%files` section of the def
 
 If the files are publically available, you can also just do a `git clone`, `wget`, or some other download command to fetch the files during the build phase.
 
-### Adding scripts during the execution phase
+#### Adding scripts during the execution phase
 
 **This option is best for "developing" programs** - that is, something that you are actively developing. Because you are frequently making changes to the scripts, you want to skip the build phase as much as possible.
 
 * **If you are submitting jobs to the OSPool**, scripts included in the `transfer_input_files` line of your submit file will be automatically added to the container at the run time of the job.
 * **If you are manually launching the container**, you should check out the "Appendix A: Containers and the filesystem" section at the end of this document.
 
-# Containers on the OSPool
+## Containers on the OSPool
 
 *Distributed computing with containers in mind.*
 
@@ -417,7 +431,7 @@ If the files are publically available, you can also just do a `git clone`, `wget
 
 
 
-## Simple Python Job
+### Simple Python Job
 
 *We've provided an example "submit file" for describing an HTCondor job that uses a container.*
 
@@ -473,11 +487,11 @@ You should see that the version of packages matches what you get when you run th
 apptainer exec my-container.sif python3 python-test.py
 ```
 
-## OSG Container Support
+### OSG Container Support
 
 *Portable, reproducible software environments help take advantage of the OSPool's diverse computing capacity.*
 
-### Efficient distribution with the OSDF
+#### Efficient distribution with the OSDF
 
 Container images are usually a couple of gigabytes in size. For most computers and networks, downloading that much data once is usually no big deal.
 But the OSPool is a geographically distributed system that executes an **average of 1 million jobs per day**. 
@@ -504,7 +518,7 @@ A variety of [public datasets](https://osg-htc.org/services/osdf/data) are acces
 * If you are interested in accessing data via the OSDF but not while using the OSPool, [see this documentation](https://docs.osdf.osg-htc.org/).
 * If you are interested in making your data accessible via the OSDF, [see the overview page](https://osg-htc.org/services/osdf).
 
-### Curated containers
+#### Curated containers
 
 We maintain a set of container images for a handful of common softwares for use on the OSPool with a variety of "nice to have" packages/libraries.
 
@@ -524,24 +538,24 @@ You can also use the address `docker://hub.opensciencegrid.org/htc/rocky:9` with
 > If you are curious about what software we include in these curated containers, you can find the corresponding definition file in our GitHub repository at [github.com/osg-htc/htc-images](https://github.com/osg-htc/htc-images).
 > For example, the aforementioned Rocky 9 image uses [this (Docker) definition file](https://github.com/osg-htc/htc-images/blob/main/htc/rocky%3A9/Dockerfile).
 
-# Next Steps
+## Next Steps
 
 *Where to go from here.*
 
-### Build your own container
+#### Build your own container
 
 Now that you've learned the basics, you should try building a container for **your** software!
 Appendix B below has more tips for building containers; you should check out the "Example definition files" for sure!
 
-### Using your own container
+#### Using your own container
 
-#### ...on the OSPool
+##### ...on the OSPool
 
 If want to use the OSPool for your work, be sure to check out the guides at [portal.osg-htc.org](https://portal.osg-htc.org), particularly the ones linked earlier in this notebook.
 
 If you don't have an OSPool account, **you can request an OSPool account** through [this form](https://portal.osg-htc.org/application).
 
-#### ...on your computer
+##### ...on your computer
 
 Apptainer works best on a Linux operating system. The simplest way to get started is to set up the "unprivileged" installation, [described here](https://apptainer.org/docs/admin/1.4/installation.html#install-unprivileged-from-pre-built-binaries).
 
@@ -551,7 +565,7 @@ In this case, you should also check out Appendix A below to understand how conta
 > The most common commercial technology is Docker Desktop.
 > But while generally convenvient to use, it is a licensed software that requires purchase for most use cases.
 
-#### ...on your local cluster
+##### ...on your local cluster
 
 **For just your user account**, you can set up the "unprivileged" installation of Apptainer on your local system, [as described here](https://apptainer.org/docs/admin/1.4/installation.html#install-unprivileged-from-pre-built-binaries).
 
@@ -563,7 +577,7 @@ It may be possible for your system administrator to set up other container techn
 > If you want to use a container for executing a calculation across **multiple nodes**, however, your container has to be set up to work with that cluster's network hardware.
 > It is possible, but can be challenging to get right.
 
-### Get help
+#### Get help
 
 For support, **you can email `support@osg-htc.org`.**
 
@@ -574,7 +588,7 @@ For support, **you can email `support@osg-htc.org`.**
 * [Current training schedule](https://osg-htc.org/services/facilitation/monthly-training)
 * [Past materials](https://portal.osg-htc.org/documentation/support_and_training/training/materials/)
 
-### Connect with the OSG
+#### Connect with the OSG
 
 **We host weekly campus meetups** targeted at campuses who are interested in, or actively contributing to, the OSPool. For more information, see the [contributors documentation here](https://osg-htc.org/campus-docs/).
 
@@ -582,7 +596,7 @@ For support, **you can email `support@osg-htc.org`.**
 
 **We host an annual conference on high throughput computing.** This year is **HTC26**, from June 9-12 in Madison, WI. Agenda is still being planned out. See the [save-the-date announcement](https://osg-htc.org/events/2026/06/09/throughput-computing-week/) for more information. Last year's conference website is [here](https://agenda.hep.wisc.edu/event/2297/).
 
-# Appendix A: Containers and the Filesystem
+## Appendix A: Containers and the Filesystem
 
 *Things start to get complicated when input and output files are involved.*
 
@@ -593,7 +607,7 @@ If you try to access a "higher" level directory from inside of the container, yo
 Apptainer has default behavior to make a bridge between the host system and the container environment.
 Understanding that bridge will help us understand how we can make changes to the way the container interacts with the host.
 
-### Accessing files from inside the container
+#### Accessing files from inside the container
 
 Let's start by running this command on the host and inside of the container:
 
@@ -660,7 +674,7 @@ In this case, we again see the contents of the home directory.
 
 While in practice this combination of `--contain` and `--bind` effectively cancel each other out, the point is that **with the `--bind` option you can specify what part of the host filesystem your container has access to**.
 
-### "Saving" changes
+#### "Saving" changes
 
 IMPORTANTLY: **only files created in a "mounted" (`--bind`) directory will be kept after the container stops running!!**
 
@@ -722,7 +736,7 @@ The second example protects your home directory, but is more complex.
 The best approach to address this situation, in practice, is to modify the main script (here, `create_directory_and_file.sh`) to operate at or below the execution directory.
 That is, instead of `mkdir -p ~/test_directory` the script should do `mkdir -p ./test_directory`. 
 
-### Containers are immutable
+#### Containers are immutable
 
 Another important item to note is that **most locations "in" the container image are read-only**.
 
@@ -753,11 +767,11 @@ There are two main causes of (2): (a) your script uses absolute paths or (b) you
 * (a): Often researchers who write their own programs start on their personal computer. To stay organized, they have some code that says all outputs should go into a directory like `/User/Documents/Research/Project3/outputs`, while maybe the script itself lives in `/User/Programs/my_code.py`. To work in containers (and shared computing systems), the researcher should modify their code to work with relative paths instead.
 * (b) The "normal" installation of Docker does allow some writing in the root directory (`/`), so some developers will use paths like `/data` or `/app` for writing temporary files. Sometimes the "official" container you are using follows this paradigm. You may be able to modify the container to work around this issue, but it may be easier to build a new container where you manually install the software yourself.
 
-# Appendix B: Tips for Building Containers
+## Appendix B: Tips for Building Containers
 
 *Software installation is hard, regardless of whether or not it's in a container.*
 
-## Finding container images
+### Finding container images
 
 A lot of mainstream softwares (and even niche softwares, depending on the developer) have official containers published on the internet for anyone to use.
 In general, most of these containers are published on "DockerHub", which is kind of like "GitHub", but for container images.
@@ -782,7 +796,7 @@ This tag is always updated to whatever the most recent version is, which means y
 >
 > Because `python` is an official repository, the `<reponame>` and `<imagename>` are combined into one.
 
-## Example definition files
+### Example definition files
 
 Whether for inspiration, education, or just to copy and paste, example definition files are useful for building containers.
 
@@ -811,7 +825,7 @@ For something that looks more like a "traditional" Linux installation of a softw
 
 The definition files for the OSG curated images can also be involved - [browse the images repository for examples](https://github.com/osg-htc/htc-images/tree/main/htc).
 
-## Setting PATH
+### Setting PATH
 
 In Linux, except for the most basic commands, every command is just a file in a directory somewhere. 
 The `PATH` environment variable stores the list of the directories that should be checked when looking for a command.
@@ -825,7 +839,7 @@ To be able to run a script anywhere as a command, the directory containing the s
 You can either (a) move/copy the script into a default location, or (b) update the `PATH` value to include said directory.
 Since research software can be location sensitive, it is usually best to update the `PATH` value. 
 
-### Setting PATH at runtime
+#### Setting PATH at runtime
 
 At anytime, whether or not you are using a container, you can update the `PATH` value to add another location. 
 Caution is needed, however, because if you mess it up, you won't be able to run most commands!!
@@ -855,7 +869,7 @@ export PATH="$OLD_PATH"
 If that doesn't work, exit the terminal and login again.
 That will reset the value of `PATH` set during the session.
 
-### Setting PATH during container build
+#### Setting PATH during container build
 
 If you know that you will always want to access a command, you can set the value of PATH during the container build.
 To do so, you will need to know the absolute path to the necessary location (inside of the container) in advance.
@@ -883,9 +897,9 @@ If you have multiple locations you want to add to the `PATH`, you should declare
 Avoid using complicated logic in this section. 
 If you need something more complex, you should probably include it as a script in the container and remember to execute it after startup.
 
-## Troubleshooting errors
+### Troubleshooting errors
 
-### Command not found
+#### Command not found
 
 If the container build is successful, but you get a `command not found` error when you try testing the container, then either
 
@@ -902,7 +916,7 @@ It could also be that the installation command you are using doesn't install wha
 For example, there are some Python programs that have one package for using the program directly in Python, but another package for using the program via the command line.
 Consult the documentation for the software you are trying to install.
 
-### Build is stuck
+#### Build is stuck
 
 Here, the build command is still running but there's been no updates to the output in quite a while (>5 minutes). 
 Some software takes a while to run, and is not verbose about the process. 
@@ -930,7 +944,7 @@ The next most common case is the interactive installer used by `miniconda`.
 While the `miniconda` installer has a non-interactive mode (look for "batch installation" instructions), you can also just use an official conda container as the base.
 (I recommend using the [`miniforge` container](https://hub.docker.com/r/condaforge/miniforge3).)
 
-### Missing dependencies
+#### Missing dependencies
 
 Because container images can easily get large (10s of GB), most published containers have been very stripped down - they only contain the bare minimum necessary to execute the main program.
 Unless the software you want to install happens to share the same set of requirements as the original software in the published container, you will encounter missing dependencies during the installation.
@@ -948,7 +962,7 @@ Sometimes, though, the dependencies are difficult to install.
 In that case, you may want to consider changing your base container to something that already has the necessary dependencies installed.
 That isn't always an option, however.
 
-## Containers and GPUs
+### Containers and GPUs
 
 Containers can use GPUs, but getting the software to talk with the GPU correctly can be tricky to get right.
 
@@ -967,7 +981,7 @@ If you are using the OSPool, we have sorted out most of the backend details to e
 
 If you are using GPUs elsewhere, there are some additional details you may need to sort out in order to launch the container and use the GPU. Instructions for Apptainer are [here](https://apptainer.org/docs/user/latest/gpu.html). 
 
-## Containers and CPU Architectures
+### Containers and CPU Architectures
 
 Like other software, containers can be sensitive to the CPU architecture used by the CPU hardware itself.
 In general, if you built a container on one type of CPU architecture, it should be useable on other computers using the same type of CPU architecture.
@@ -987,7 +1001,7 @@ For a discussion of CPU architecture considerations, see...
 * ...for Docker, [this manual page](https://docs.docker.com/build/building/multi-platform/)
 
 
-## What about performance?
+### What about performance?
 
 Is it slower to use a container?
 
