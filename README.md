@@ -301,12 +301,12 @@ The output of this command details the container build process, including the in
    This section is separated from the previous by the `INFO: Running post scriptlet` line. 
    If you are familiar with `conda install` commands, the output is the almost exactly the same as usual!
 
-   > [!TIP]
-   > In the quickstart, this middle step was skipped 
-
 3. Finally, once the `%post` commands have all run (typically "successfully"), Apptainer **records the results as a `SIF` formatted file.**
 
    The process is complete once you see `Build complete`.
+
+> [!TIP]
+> In the quickstart, this middle step was skipped 
 
 Confirm that the container image has been created by running:
 
@@ -327,6 +327,9 @@ apptainer shell conda.sif
 
 After running this command, your command prompt will appear as `Apptainer>`.
 Now the commands that you run will use the environment provided by your container image.
+
+> [!TIP]
+> The `miniforge` base container will automatically activate the conda environment on start-up - there's no need to run any `conda activate` commands!
 
 In general, if you can get the "help" text for a command or load a package, it is a strong indication that the software was installed as expected.
 
@@ -388,7 +391,7 @@ exit
 
 to exit the interactive shell mode.
 
-> [!NOTE]
+> [!TIP]
 > In general, **anywhere** you have Apptainer, you can run the above commands to reproduce the software environment you created in your container!
 
 ### Phase 3 - Execute
@@ -429,8 +432,8 @@ osdf:///chtc/staging/yourNetID/conda.sif
 to specify the location of the container.
 
 > [!CAUTION]
-> Items that have been transferred using the OSDF **must not be changed**.
-> If you do need to modify the item, you should also change its name!!
+> **You must not change items that have been transferred using the OSDF!**
+> If you do need to modify the item, you should also change its name.
 
 If you are using a shared group staging directory, or otherwise don't want to use the OSDF, you can use the address
 
@@ -473,8 +476,8 @@ First, move into the `testjobs` directory:
 cd testjobs/
 ```
 
-> [!CAUTION]
-> Make sure you have exited your interactive job! Just enter `exit` until you see `ap2001` or `ap2002`.
+> [!WARNING]
+> If you can't find the `testjobs/` directory, make sure you have exited your interactive job! Just enter `exit` until you see `ap2001` or `ap2002`.
 
 #### The submit files
 
@@ -530,7 +533,7 @@ condor_watch_q
 ```
 
 > [!TIP]
-> If your job goes on hold with a message about `Transfer input files failure`, double check that you actually changed `yourNetID` to your actual NetID!!
+> If your job goes on hold with a message about `Transfer input files failure`, double check that you actually changed `yourNetID` to your actual NetID in `container.sub`!!
 
 #### Examine the results
 
@@ -574,7 +577,7 @@ apptainer exec /staging/$USER/conda.sif ./test.sh
 
 You should see the exact same output as you did in the `container.out` file!!
 
-> [!WARNING]
+> [!CAUTION]
 > In general, you should not run `apptainer exec` on the execution point, unless it is for something simple like this.
 > For anything more complicated or intense, you should start an interactive job first!
 > In this case, you could just do `condor_submit -i container.sub`.
@@ -646,6 +649,16 @@ In our "Recipes" repository, we curate example definition files for installing a
 Check it out at [github.com/CHTC/recipes](https://github.com/CHTC/recipes), especially the `software` section.
 
 If you have a container recipe that you want to share with other users, let us know and we'll work with you to add it to the repository!
+
+#### More Conda recipes
+
+We have other examples of building container with Conda packages.
+
+* [Basic Conda](https://github.com/CHTC/recipes/tree/main/software/Conda/base-conda)
+* [Bioconda (today's example)](https://github.com/CHTC/recipes/tree/main/software/Conda/bioconda)
+* [Conda using environment.yaml file](https://github.com/CHTC/recipes/tree/main/software/Conda/conda-env-yaml)
+* [Conda with multiple environments](https://github.com/CHTC/recipes/tree/main/software/Conda/conda-multi-env)
+* [Install PyTorch using Conda](https://github.com/CHTC/recipes/tree/main/software/Conda/conda-pytorch)
 
 ### Facilitation
 
