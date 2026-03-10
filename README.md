@@ -38,7 +38,7 @@
 
 ## Materials
 
-* Slides: [TBD](TBD)
+* Slides: [go.wisc.edu/7ie734](https://go.wisc.edu/7ie734)
 * GitHub: [github.com/CHTC/biocafe-containers](https://github.com/CHTC/biocafe-containers)
 
 ## Quickstart: The Power of Containers
@@ -141,14 +141,14 @@ Even if you don't use a container, you'll still need to learn how to install you
 
 Three phases to building containers:
 
-* **Phase 1 - Setup**
+* **Phase 1 - Plan**
 * **Phase 2 - Build**
 * **Phase 3 - Execute**
 
 > [!TIP]
 > In principle, Phases 1 & 2 are one-time only!
 
-### Phase 1 - Setup
+### Phase 1 - Plan
 
 1. **Identify** the "main" software you want to deploy.
 2. Find the **installation instructions** for the software you want to deploy.
@@ -189,7 +189,7 @@ For your own purposes, you also want to use **`bwa`** and the Python package **`
 
 **How should you proceed?**
 
-### Phase 1 - Setup
+### Phase 1 - Plan
 
 #### What do you need?
 
