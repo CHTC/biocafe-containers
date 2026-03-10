@@ -21,7 +21,7 @@
 2. Clone this repository.
 
    ```
-   git clone github.com/chtc/biocafe-containers
+   git clone https://github.com/CHTC/biocafe-containers
    ```
 
 3. Move into the new folder.
@@ -121,6 +121,7 @@ This description of a movie is analogous to how containers work.
    * If you want to make major changes, you should build a new container image.
 5. A **definition file** is used to organize the software and environment details for the build process.
 
+> [!TIP]
 > In the same way that the word **movie** can be used to refer to the physical media (the **film**, DVD, etc.) or the sequence of images on the screen,
 > so too can the word **container** be used to refer to the **container image** or the actively running environment.
 
@@ -144,6 +145,7 @@ Three phases to building containers:
 * **Phase 2 - Build**
 * **Phase 3 - Execute**
 
+> [!TIP]
 > In principle, Phases 1 & 2 are one-time only!
 
 ### Phase 1 - Setup
@@ -203,6 +205,7 @@ For the above scenario, you need:
     * scipy
     * seaborn
 
+> [!NOTE]
 > We're going to ignore the GitHub repository itself for now; more discussion later.
 
 #### Installation instructions
@@ -260,6 +263,7 @@ There are a couple parts to the file:
    * The `conda config` commands enable Bioconda as a source for packages
    * The `conda install` command actually installs the packages
 
+> [!NOTE]
 > For a full breakdown of the parts of an Apptainer definition file, see
 >
 > * [CHTC Apptainer guide](https://chtc.cs.wisc.edu/uw-research-computing/apptainer-build.html)
@@ -297,6 +301,7 @@ The output of this command details the container build process, including the in
    This section is separated from the previous by the `INFO: Running post scriptlet` line. 
    If you are familiar with `conda install` commands, the output is the almost exactly the same as usual!
 
+   > [!TIP]
    > In the quickstart, this middle step was skipped 
 
 3. Finally, once the `%post` commands have all run (typically "successfully"), Apptainer **records the results as a `SIF` formatted file.**
@@ -316,8 +321,8 @@ It's always good practice to review the final product.
 
 You can use the `shell` command to interact with the container directly:
 
-```
-apptainer shell my-container.sif
+```bash
+apptainer shell conda.sif
 ```
 
 After running this command, your command prompt will appear as `Apptainer>`.
@@ -336,7 +341,7 @@ You should see the help text explaining how to use the `samtools` command.
 Next, let's check for `bwa` by running
 
 ```bash
-bwa --help
+bwa
 ```
 
 You should see the help text explaing how to use the `bwa` command.
@@ -383,6 +388,7 @@ exit
 
 to exit the interactive shell mode.
 
+> [!NOTE]
 > In general, **anywhere** you have Apptainer, you can run the above commands to reproduce the software environment you created in your container!
 
 ### Phase 3 - Execute
@@ -398,9 +404,15 @@ Before exiting the interactive job where you built the container `.sif` image, y
 mv conda.sif /staging/$USER/conda.sif
 ```
 
-Then you can exit the interactive job.
+Then you can exit the interactive job by running
+
+```bash
+exit
+```
+
 If you created or modified the corresponding `.def` file during the interactive job, it will be automatically returned to your `/home` directory on exit.
 
+> [!TIP]
 > If you forget to move the `.sif` file to staging, it will be automatically returned to your `/home` directory.
 > No worries if that happens - just run the above `mv` command a couple minutes after the job has ended.
 > (It can take a couple of minutes for a large file to be transferred back.)
@@ -416,7 +428,8 @@ osdf:///chtc/staging/yourNetID/conda.sif
 
 to specify the location of the container.
 
-> Note that items transferred using the OSDF **must not be changed**.
+> [!CAUTION]
+> Items that have been transferred using the OSDF **must not be changed**.
 > If you do need to modify the item, you should also change its name!!
 
 If you are using a shared group staging directory, or otherwise don't want to use the OSDF, you can use the address
@@ -460,6 +473,7 @@ First, move into the `testjobs` directory:
 cd testjobs/
 ```
 
+> [!CAUTION]
 > Make sure you have exited your interactive job! Just enter `exit` until you see `ap2001` or `ap2002`.
 
 #### The submit files
@@ -481,14 +495,21 @@ cat container.sub
 
 What has changed?
 
+> [!TIP]
 > If you'd like some help comparing the two files, run the command
 >
 > ```bash
-> diff -y no-container.sub container.sub
+> diff -y --color=always no-container.sub container.sub
 > ```
 
 Each test job is executing the `test.sh` script (which itself is just checking the versions of stuff we added to the container).
 The `no-container.sub` does not use a container, while the `container.sub` does use a container (note the additional `container_image` line in the file).
+
+**Before you continue**, make sure to replace `yourNetID` in the `container.sub` file with your actual NetID.
+You can edit the file using the command line editors `nano` or `vim`.
+
+> [!WARNING]
+> If you do not replace `yourNetID` with your actual NetID, then your container job will go on hold with a `Transfer input files failure`.
 
 #### Run the jobs
 
@@ -507,6 +528,9 @@ You can monitor their progress by running the command
 ```bash
 condor_watch_q
 ```
+
+> [!TIP]
+> If your job goes on hold with a message about `Transfer input files failure`, double check that you actually changed `yourNetID` to your actual NetID!!
 
 #### Examine the results
 
@@ -550,7 +574,8 @@ apptainer exec /staging/$USER/conda.sif ./test.sh
 
 You should see the exact same output as you did in the `container.out` file!!
 
-> NOTE: In general, you should not run `apptainer exec` on the execution point, unless it is for something simple like this.
+> [!WARNING]
+> In general, you should not run `apptainer exec` on the execution point, unless it is for something simple like this.
 > For anything more complicated or intense, you should start an interactive job first!
 > In this case, you could just do `condor_submit -i container.sub`.
 
@@ -690,6 +715,7 @@ But for these foundational softwares, the more "general" tag will usually work. 
 **As a general rule, you should avoid using the `latest` tag!**
 This tag is always updated to whatever the most recent version is, which means you won't be able to reproduce the container build in the future!
 
+> [!NOTE]
 > Smaller, less "foundational" softwares will have much fewer results that are easier to look through.
 > Once you've decided on a version, you want to look for the text `docker pull <reponame>/<imagename>:<tagname>`.
 > You can then use the corresponding address `docker://<reponame>/<imagename>:<tagname>` in compatible container technologies to reference that container image.
@@ -796,7 +822,8 @@ Sometimes, though, the installation is waiting for interactive feedback in order
 Check the last few lines of the output.
 If you don't see a question or prompt for information, then you may just need to wait some more.
 
-> If you're sure the installation is running, but still want to be able to monitor progress, you can investigate if the installation command has a "verbose" option.
+> [!TIP]
+> If you're sure the installation is running, but still want to be able to monitor progress, you should investigate if the installation command has a "verbose" option.
 
 If you see a question or prompt for information, it could be that the installation is waiting for user interaction to proceed.
 However, user interaction is not well supported during the container build step (and even if it was, it would be poorly reproducible).

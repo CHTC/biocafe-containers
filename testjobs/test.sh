@@ -3,6 +3,9 @@
 # The following commands will check the versions of the programs we want to use.
 
 cat << EOF
+$ bwa 2>&1 >/dev/null | head -n 4
+$(bwa 2>&1 >/dev/null | head -n 4)
+
 $ samtools --version | head -n 3
 $(samtools --version | head -n 3)
 
