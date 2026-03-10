@@ -39,7 +39,7 @@
 ## Materials
 
 * Slides: [TBD](TBD)
-* GitHub: [TBD](TBD)
+* GitHub: [github.com/CHTC/biocafe-containers](https://github.com/CHTC/biocafe-containers)
 
 ## Quickstart: The Power of Containers
 
@@ -228,7 +228,7 @@ Altogether, that means if we can get Conda set up, then we can install everythin
 
 Choosing a good base image can save a lot of time.
 
-For information on how to find an official container, see the "Finding container images" section in Appendix B at the end of this document.
+For information on how to find an official container, see the "Finding container images" section in at the end of this document.
 
 Since everything we need can be installed using Conda, then **a good base container would come with `conda` already installed.**
 
@@ -265,7 +265,6 @@ There are a couple parts to the file:
 > * [CHTC Apptainer guide](https://chtc.cs.wisc.edu/uw-research-computing/apptainer-build.html)
 > * [Apptainer manual](https://apptainer.org/docs/user/latest/definition_files.html)
 >
-> Additional tips are provided in Appendix B of this notebook.
 
 #### Build the container
 
@@ -386,6 +385,175 @@ to exit the interactive shell mode.
 
 > In general, **anywhere** you have Apptainer, you can run the above commands to reproduce the software environment you created in your container!
 
+### Phase 3 - Execute
+
+Once you've tested that the container works, it's time to use it.
+HTCondor makes this easier than you might think.
+
+#### Distributing the container
+
+Before exiting the interactive job where you built the container `.sif` image, you should move the container image file to your `/staging` directory.
+
+```bash
+mv conda.sif /staging/$USER/conda.sif
+```
+
+Then you can exit the interactive job.
+If you created or modified the corresponding `.def` file during the interactive job, it will be automatically returned to your `/home` directory on exit.
+
+> If you forget to move the `.sif` file to staging, it will be automatically returned to your `/home` directory.
+> No worries if that happens - just run the above `mv` command a couple minutes after the job has ended.
+> (It can take a couple of minutes for a large file to be transferred back.)
+
+Once the container image is in `/staging`, then we can access it just like any other large file in `/staging`.
+
+In general, we recommend using the OSDF for the file transfer.
+In your submit file, you'll use the address
+
+```
+osdf:///chtc/staging/yourNetID/conda.sif
+```
+
+to specify the location of the container.
+
+> Note that items transferred using the OSDF **must not be changed**.
+> If you do need to modify the item, you should also change its name!!
+
+If you are using a shared group staging directory, or otherwise don't want to use the OSDF, you can use the address
+
+```
+file:///staging/groups/yourGroupDirectory/conda.sif
+```
+
+in your submit file, but you will also need to include the line
+
+```
+requirements = (HasCHTCStaging == True)
+```
+
+to ensure the execution point can access the staging directory.
+
+For more information on using the `/staging` directory, [read the guide here](https://chtc.cs.wisc.edu/uw-research-computing/file-avail-largedata).
+
+#### Using the container with HTCondor
+
+The software that runs the HTC system, called HTCondor ([htcondor.org](https://htcondor.org)), comes with built-in container support for both Apptainer (today's focus) and Docker.
+All you need to do is tell HTCondor where the container is located, and it will handle the rest.
+
+In your submit file, all you need to do is add the line
+
+```
+container_image = locationOfYourContainer
+```
+
+As long as the location is something that HTCondor understands how to transfer, the job will automatically fetch the container image and run the appropriate `exec` command.
+
+### Test Jobs
+
+*We've provided example submit files to explore HTCondor jobs using containers.*
+
+Now that we have all the pieces, let's see the container in action.
+
+First, move into the `testjobs` directory:
+
+```bash
+cd testjobs/
+```
+
+> Make sure you have exited your interactive job! Just enter `exit` until you see `ap2001` or `ap2002`.
+
+#### The submit files
+
+We've provided two submit files: `no-container.sub` and `container.sub`.
+
+Take a look at the contents of the first file by running
+
+```bash
+cat no-container.sub
+```
+
+Take a look over the contents to make sure you understand what this test job is doing.
+Once you understand this submit file, take a look at the other one by running
+
+```bash
+cat container.sub
+```
+
+What has changed?
+
+> If you'd like some help comparing the two files, run the command
+>
+> ```bash
+> diff -y no-container.sub container.sub
+> ```
+
+Each test job is executing the `test.sh` script (which itself is just checking the versions of stuff we added to the container).
+The `no-container.sub` does not use a container, while the `container.sub` does use a container (note the additional `container_image` line in the file).
+
+#### Run the jobs
+
+Submit each of the test jobs:
+
+```bash
+condor_submit no-container.sub
+```
+
+```bash
+condor_submit container.sub
+```
+
+You can monitor their progress by running the command
+
+```bash
+condor_watch_q
+```
+
+#### Examine the results
+
+Once completed, take a look at the output files generated by the two test jobs.
+
+First let's look at the job that did not use a container:
+
+```bash
+cat no-container.out
+```
+
+You should see versions reported only for `python3` and `numpy`, and not anything else.
+Without the container, you are using whatever software the execution point happens to have installed, which does not include `bwa` or `samtools` or the other python packages.
+In fact, you can see corresponding error messages in the `.err` file:
+
+```bash
+cat no-container.err
+```
+
+Now if we look at the job that used a container, we'll see what we want to see:
+
+```bash
+cat container.out
+```
+
+```bash
+cat container.err
+```
+
+The `.out` file reports a version for each of the packages that we checked, and the `.err` file should be empty.
+
+#### Reproducibility
+
+Importantly, as long as we are using the exact same `.sif` file for our job/calculation/script, **we'll always get the same software versions**!
+
+You can confirm this by running
+
+```bash
+apptainer exec /staging/$USER/conda.sif ./test.sh
+```
+
+You should see the exact same output as you did in the `container.out` file!!
+
+> NOTE: In general, you should not run `apptainer exec` on the execution point, unless it is for something simple like this.
+> For anything more complicated or intense, you should start an interactive job first!
+> In this case, you could just do `condor_submit -i container.sub`.
+
 ### Putting scripts in the container
 
 *How should you get those scripts into the container image?*
@@ -403,357 +571,93 @@ First, you have to answer this question: when should the scripts be placed insid
 **This option is for "mature" programs** - that is, something that you don't plan to modify after the build phase is complete and the container image has been created. 
 Maybe you'll make changes, but you can plan on repeating the build phase to create a new container image in that case.
 
-To add files to the container build, you can use the `%files` section of the definition file, as described [here](https://apptainer.org/docs/user/latest/definition_files.html#files). (This is specific to Apptainer, but other container technologies have an analogous method; the specific syntax varies.)
+To add files to the container build, you can use the `%files` section of the definition file, as described [here](https://apptainer.org/docs/user/latest/definition_files.html#files).
+(This is specific to Apptainer, but other container technologies have an analogous method; the specific syntax varies.)
 
-If the files are publically available, you can also just do a `git clone`, `wget`, or some other download command to fetch the files during the build phase.
+If the files are publicly available, you can instead include a `git clone`, `wget`, or some other download command in the `%post` section to fetch the files during the build phase.
 
 #### Adding scripts during the execution phase
 
 **This option is best for "developing" programs** - that is, something that you are actively developing. Because you are frequently making changes to the scripts, you want to skip the build phase as much as possible.
 
-* **If you are submitting jobs to the OSPool**, scripts included in the `transfer_input_files` line of your submit file will be automatically added to the container at the run time of the job.
-* **If you are manually launching the container**, you should check out the "Appendix A: Containers and the filesystem" section at the end of this document.
+When using HTCondor, scripts included in the `transfer_input_files` line of your submit file will be automatically added to the container at the run time of the job.
 
-## Containers on the OSPool
+## CHTC Container Support
 
-*Distributed computing with containers in mind.*
+*We're here to help you through your container journey.*
 
-**The OSPool is a distributed computing resource that is available for free to all U.S.-based academic/non-profit researchers.**
+### Guides
 
-* [Overview of the OSPool](https://osg-htc.org/services/ospool)
-* [Getting started on the OSPool](https://portal.osg-htc.org/documentation/overview/account_setup/is-it-for-you/)
+Our website has a lot of information about working with containers.
 
+* [Overview (start here!)](https://chtc.cs.wisc.edu/uw-research-computing/software-overview-htc)
 
-**The use of Apptainer images is well supported on the OSPool.** The software HTCondor ([htcondor.org](https://htcondor.org)) is used to run the OSPool, and HTCondor comes with built-in container support.
+**Apptainer**
 
-> While HTCondor has good support for Docker images as well, most computing capacity accessible via the OSPool does not use Docker.
+* [Use and build Apptainer containers](https://chtc.cs.wisc.edu/uw-research-computing/apptainer-htc)
+* [In depth guide to Apptainer definition file](https://chtc.cs.wisc.edu/uw-research-computing/apptainer-build)
+* [Advanced example of Apptainer definition file](https://chtc.cs.wisc.edu/uw-research-computing/apptainer-htc-advanced-example)
+* [Convert Docker container into Apptainer container](https://chtc.cs.wisc.edu/uw-research-computing/htc-docker-to-apptainer)
 
+**Docker**
 
+* [Use Docker containers](https://chtc.cs.wisc.edu/uw-research-computing/docker-jobs)
+* [Build your own Docker container (on your computer)](https://chtc.cs.wisc.edu/uw-research-computing/docker-build)
+* [Test your Docker container before using on CHTC](https://chtc.cs.wisc.edu/uw-research-computing/docker-test)
 
+### Tutorials
 
-### Simple Python Job
+Today's training is a practical introduction for Conda containers.
+If you want a more general introduction to containers, see our previous tutorial:
 
-*We've provided an example "submit file" for describing an HTCondor job that uses a container.*
+[github.com/CHTC/tutorial-containers](https://github.com/CHTC/tutorial-containers)
 
-As before, we want to ensure that our desired packages are installed and have the right versions.
+### Recipes
 
-To submit a job to the OSPool, you need to provide HTCondor with a "submit file" that describes what the job needs in order to run.
-Don't worry about the contents right now - see the OSPool documentation for more details.
+Don't reinvent the wheel!
 
-The line with `container_image` tells HTCondor we want to use an Apptainer image to provide the software environment for the job.
-HTCondor will handle the details of launching the container - you do not need to provide any `apptainer` commands here!
+In our "Recipes" repository, we curate example definition files for installing a variety of software in containers.
 
-Let's take a look:
+Check it out at [github.com/CHTC/recipes](https://github.com/CHTC/recipes), especially the `software` section.
 
+If you have a container recipe that you want to share with other users, let us know and we'll work with you to add it to the repository!
 
-```bash
-cat with-container.sub
-```
+### Facilitation
 
-> NOTE: **If you are not using the "Guest" option** of the OSPool Notebook, you should not submit more than 1 or 2 jobs using this approach!
-> Instead, you should use something like 
->
-> ```
-> container_image = osdf:///location/of/container/image.sif
-> ```
-> </br>
->
-> For more instructions for using the OSDF with containers, [read this guide](https://portal.osg-htc.org/documentation/htc_workloads/managing_data/osdf/).
->
-
-Use the command `condor_submit` to give HTCondor the information needed to create a job.
-
-
-```bash
-condor_submit with-container.sub
-```
-
-When complete, check the contents of the new files:
-
-
-```bash
-cat with-container.out
-```
-
-
-```bash
-cat with-container.err
-```
-
-You should see that the version of packages matches what you get when you run the python script directly in the container:
-
-
-```bash
-apptainer exec my-container.sif python3 python-test.py
-```
-
-### OSG Container Support
-
-*Portable, reproducible software environments help take advantage of the OSPool's diverse computing capacity.*
-
-#### Efficient distribution with the OSDF
-
-Container images are usually a couple of gigabytes in size. For most computers and networks, downloading that much data once is usually no big deal.
-But the OSPool is a geographically distributed system that executes an **average of 1 million jobs per day**. 
-If every job uses a container, that would be **petabytes** of data transferred over the nation's internet! (Not to mention all the other input, output data that is needed!)
-
-![image.png](.images/396b1186-77ae-4e91-828c-d90f3a973622.png)
-
-Since the computer resources are geographically distributed across the U.S., data distribution can be a challenge.
-**Containers and other re-usable data can be "cached" in various places using the Open Science Data Federation (OSDF).**
-
-The OSDF is a system of robust caches at major internet hubs.
-When a file is transferred through the OSDF, a copy is kept at a nearby cache.
-The next time that file is requested through the OSDF, the cache can provide it's copy instead of going back to the "origin" of the data.
-
-![OSG_Map.png](.images/e5ad49ce-4062-487f-aff8-85ca28708a2c.png)
-
-**All OSPool users have access to an OSDF origin through their main access point.** 
-By placing their container image in the OSDF origin and using the corresponding syntax in their submit file, they can harness this caching system for their OSPool jobs. 
-For instructions on how to do so, [see this guide](https://portal.osg-htc.org/documentation/htc_workloads/managing_data/osdf/). 
-
-**The OSDF is used for more than just the OSPool, though.**
-A variety of [public datasets](https://osg-htc.org/services/osdf/data) are accessible through the OSDF, with more being added all the time.
-
-* If you are interested in accessing data via the OSDF but not while using the OSPool, [see this documentation](https://docs.osdf.osg-htc.org/).
-* If you are interested in making your data accessible via the OSDF, [see the overview page](https://osg-htc.org/services/osdf).
-
-#### Curated containers
-
-We maintain a set of container images for a handful of common softwares for use on the OSPool with a variety of "nice to have" packages/libraries.
-
-The containers are available via a Docker-compatible repository at `hub.opensciencegrid.org`.
-**For a list of available containers, see [this documentation page](https://portal.osg-htc.org/documentation/htc_workloads/using_software/available-containers-list/).**
-
-For example, the list has an entry for a "Rocky Linux 9" base image, available at `htc/rocky:9`. 
-To use this image in your definition file, you would use the header
-
-```
-Bootstrap: docker
-From: hub.opensciencegrid.org/htc/rocky:9
-```
-
-You can also use the address `docker://hub.opensciencegrid.org/htc/rocky:9` with your preferred container technology to pull the image.
-
-> If you are curious about what software we include in these curated containers, you can find the corresponding definition file in our GitHub repository at [github.com/osg-htc/htc-images](https://github.com/osg-htc/htc-images).
-> For example, the aforementioned Rocky 9 image uses [this (Docker) definition file](https://github.com/osg-htc/htc-images/blob/main/htc/rocky%3A9/Dockerfile).
+The Facilitation team is here to help.
+We're happy to chat with you about the software you want to set up, regarding any phase of the container process.
+To connect with the Facilitation team, see the "Get help" section below.
 
 ## Next Steps
 
 *Where to go from here.*
 
-#### Build your own container
+### Build your own container
 
 Now that you've learned the basics, you should try building a container for **your** software!
-Appendix B below has more tips for building containers; you should check out the "Example definition files" for sure!
+Check out the examples in the Recipes repository for inspiration, read our guides for guidance and tips, and reach out when you get stuck.
 
-#### Using your own container
+### Get help
 
-##### ...on the OSPool
+For support, **you can email `chtc@cs.wisc.edu`.**
 
-If want to use the OSPool for your work, be sure to check out the guides at [portal.osg-htc.org](https://portal.osg-htc.org), particularly the ones linked earlier in this notebook.
+**We also have twice weekly office hours**, online on Zoom, for CHTC users every Tuesday and Thursday. [Details here](https://chtc.cs.wisc.edu/uw-research-computing/get-help.html#office-hours).
 
-If you don't have an OSPool account, **you can request an OSPool account** through [this form](https://portal.osg-htc.org/application).
+**CHTC Community Forum** is a new web forum for CHTC users to connect with the facilitation team and other users! [Check it out here](https://community.chtc.wisc.edu/).
 
-##### ...on your computer
-
-Apptainer works best on a Linux operating system. The simplest way to get started is to set up the "unprivileged" installation, [described here](https://apptainer.org/docs/admin/1.4/installation.html#install-unprivileged-from-pre-built-binaries).
-
-In this case, you should also check out Appendix A below to understand how containers interact with your local filesystem.
-
-> You can install other container technologies instead. 
-> The most common commercial technology is Docker Desktop.
-> But while generally convenvient to use, it is a licensed software that requires purchase for most use cases.
-
-##### ...on your local cluster
-
-**For just your user account**, you can set up the "unprivileged" installation of Apptainer on your local system, [as described here](https://apptainer.org/docs/admin/1.4/installation.html#install-unprivileged-from-pre-built-binaries).
-
-**For all users**, you should ask the system administrator to set it up. Apptainer even provides a [template](https://apptainer.org/docs/user/latest/quick_start.html#installation-request) for making such a request. 
-
-It may be possible for your system administrator to set up other container technologies on the cluster, but there may be additional security concerns to consider. (Apptainer was designed to be deployed on shared computing resources; other technologies, not so much.)
-
-> Note: On HPC systems, most containers should work just fine when executed on a **single node**.
-> If you want to use a container for executing a calculation across **multiple nodes**, however, your container has to be set up to work with that cluster's network hardware.
-> It is possible, but can be challenging to get right.
-
-#### Get help
-
-For support, **you can email `support@osg-htc.org`.**
-
-**We also have twice weekly office hours**, online on Zoom, for OSPool users every Tuesday and Thursday. [Details here](https://portal.osg-htc.org/documentation/support_and_training/support/getting-help-from-RCFs/).
-
-**We host monthly trainings** for OSPool users and have past materials available online.
-
-* [Current training schedule](https://osg-htc.org/services/facilitation/monthly-training)
-* [Past materials](https://portal.osg-htc.org/documentation/support_and_training/training/materials/)
-
-#### Connect with the OSG
-
-**We host weekly campus meetups** targeted at campuses who are interested in, or actively contributing to, the OSPool. For more information, see the [contributors documentation here](https://osg-htc.org/campus-docs/).
+### Upcoming opportunities
 
 **We host a weeklong "OSG School" over the summer**, where participants learn more about high throughput computing on the OSPool. **Applications are now open** for this year, in Madison, WI, from July 13-17. More information at [osg-htc.org/school-2026](https://osg-htc.org/school-2026/).
 
 **We host an annual conference on high throughput computing.** This year is **HTC26**, from June 9-12 in Madison, WI. Agenda is still being planned out. See the [save-the-date announcement](https://osg-htc.org/events/2026/06/09/throughput-computing-week/) for more information. Last year's conference website is [here](https://agenda.hep.wisc.edu/event/2297/).
 
-## Appendix A: Containers and the Filesystem
+-----
 
-*Things start to get complicated when input and output files are involved.*
+## Additional information
 
-When a container is launched, it is separated from the rest of the computer.
-This usually includes the filesystem.
-If you try to access a "higher" level directory from inside of the container, you may "see" a different set of files.
-
-Apptainer has default behavior to make a bridge between the host system and the container environment.
-Understanding that bridge will help us understand how we can make changes to the way the container interacts with the host.
-
-#### Accessing files from inside the container
-
-Let's start by running this command on the host and inside of the container:
-
-
-```bash
-echo -e "**PWD=${PWD}**\n$(ls $PWD)\n\n**HOME=$HOME**\n$(ls $HOME)"
-```
-
-The command shows the current directory (`PWD`), its contents, the home directory (`HOME`), and its contents.
-
-Now let's run it inside of the container:
-
-
-```bash
-apptainer exec my-container.sif bash -c 'echo -e "**PWD=${PWD}**\n$(ls $PWD)\n\n**HOME=$HOME**\n$(ls $HOME)"'
-```
-
-The two executions have the same output - this is because Apptainer's default "bridge" is in place to make it easier to work with the container environment.
-
-> The `bash -c ''` part is necessary in order to make sure the shell variables `$PWD` and `$HOME` are evaulated inside of the container environment, and not in the host environment.
-
-We can disable Apptainer's default "bridge" by using the `--contain` option.
-Let's see what happens this time:
-
-
-```bash
-apptainer exec --contain my-container.sif bash -c 'echo -e "**PWD=${PWD}**\n$(ls $PWD)\n\n**HOME=$HOME**\n$(ls $HOME)"'
-```
-
-Some things have changed: 
-
-* the current directory (`PWD`) is now the same as the home directory
-* the home directory (`HOME`) is empty (!)
-
-So (among other things), Apptainer's defaults make it so that the current directory (and its contents) on the host are accessible inside of the container environment, and that the home directory (and its contents) on the host is as well.
-
-We can manually recreate the bridge. To do so, we'll need to use the `--bind` and `--cwd` options:
-
-* `--bind <location_in_host>:<location_in_container>` - this option maps a directory on the host system to a location of your choice inside of the container.
-* `--cwd <location_in_container>` - this options says where inside the container the command should be executed.
-
-First, let's add in the current directory. We can use `--bind $PWD:$PWD` to do so (because when we run the `apptainer exec` command, the `PWD` environment variable is set to the host's value).
-We'll also need to use `--cwd` to change the value of `PWD` inside of the container:
-
-
-```bash
-apptainer exec --contain --bind $PWD:$PWD --cwd $PWD my-container.sif bash -c 'echo -e "**PWD=${PWD}**\n$(ls $PWD)\n\n**HOME=$HOME**\n$(ls $HOME)"'
-```
-
-Now we see what we expected to see for the current directory.
-
-Note that we see **only** the `tutorial-containers` directory inside of the home directory - that is because that is the only part of the host filesystem that we told Apptainer to make available inside the container.
-
-If we want to see all of the host home directory inside the container, we can bind that in as well:
-
-
-```bash
-apptainer exec --contain --bind $PWD:$PWD --cwd $PWD --bind $HOME:$HOME my-container.sif bash -c 'echo -e "**PWD=${PWD}**\n$(ls $PWD)\n\n**HOME=$HOME**\n$(ls $HOME)"'
-```
-
-In this case, we again see the contents of the home directory.
-
-> Since the `PWD` directory is inside of the `HOME` directory tree, we technically only needed to use one `--bind`  option: `--bind $HOME:$HOME`.
-
-While in practice this combination of `--contain` and `--bind` effectively cancel each other out, the point is that **with the `--bind` option you can specify what part of the host filesystem your container has access to**.
-
-#### "Saving" changes
-
-IMPORTANTLY: **only files created in a "mounted" (`--bind`) directory will be kept after the container stops running!!**
-
-To demonstrate this, we'll first make a script as follows:
-
-
-```bash
-cat << EOF > create_directory_and_file.sh
-mkdir -p ~/test_directory
-touch ~/test_directory/example.txt
-echo "Created \$(ls ~/test_directory/example.txt)"
-EOF
-
-chmod +x create_directory_and_file.sh
-```
-
-This script will create a new directory `test_directory` and create a new file in that directory, called `example.txt`, and then confirm that the file exists at the time of the script execution. 
-
-First, let's execute try executing this script in the container using the `--contain` option but no `--bind` mounting:
-
-
-```bash
-apptainer exec --contain my-container.sif bash create_directory_and_file.sh
-```
-
-This fails, because inside of the container there is no such script.
-
-We need to add in the `PWD` binding we did earlier:
-
-
-```bash
-apptainer exec --contain --bind $PWD:$PWD --cwd $PWD my-container.sif bash create_directory_and_file.sh
-```
-
-That appears to have worked as expected.
-
-Let's check if it exists after the container has stopped running:
-
-
-```bash
-ls ~/test_directory/example.txt
-ls -ld ~/test_directory
-```
-
-Nope!
-
-If we want the changes to persist, we'll need to either mount the parent directory (`HOME`) into the container, or else copy the files to a part that is mounted.
-Either of these should work:
-
-```bash
-apptainer exec --contain --bind $HOME:$HOME --cwd $PWD my-container.sif bash create_directory_and_file.sh
-# OR
-apptainer exec --contain --bind $PWD:$PWD --cwd $PWD my-container.sif bash -c 'bash create_directory_and_file.sh && cp ~/test_directory/example.txt ./'
-```
-
-The first example is probably the "simplest" conceptually, but it does give the container and the script access to your entire home directory (!). 
-The second example protects your home directory, but is more complex.
-
-The best approach to address this situation, in practice, is to modify the main script (here, `create_directory_and_file.sh`) to operate at or below the execution directory.
-That is, instead of `mkdir -p ~/test_directory` the script should do `mkdir -p ./test_directory`. 
-
-#### Containers are immutable
+### Containers are immutable
 
 Another important item to note is that **most locations "in" the container image are read-only**.
-
-For example, let's try to create a file in the root directory:
-
-
-```bash
-apptainer exec --contain my-container.sif bash -c 'touch /my-new-file.txt'
-```
-
-
-```bash
-apptainer exec my-container.sif bash -c 'touch /my-new-file.txt'
-```
-
-The root directory (`/`) and some of it's immediate subdirectories cannot by `--bind` mounted into the container - these directories are needed by the container in order to function!
-And depending on how your administrator configured the Apptainer installation, there may be other locations that this applies to.
 
 Sometimes, a program will try to write files into the root directory. There are generally two cases:
 
@@ -766,10 +670,6 @@ There are two main causes of (2): (a) your script uses absolute paths or (b) you
 
 * (a): Often researchers who write their own programs start on their personal computer. To stay organized, they have some code that says all outputs should go into a directory like `/User/Documents/Research/Project3/outputs`, while maybe the script itself lives in `/User/Programs/my_code.py`. To work in containers (and shared computing systems), the researcher should modify their code to work with relative paths instead.
 * (b) The "normal" installation of Docker does allow some writing in the root directory (`/`), so some developers will use paths like `/data` or `/app` for writing temporary files. Sometimes the "official" container you are using follows this paradigm. You may be able to modify the container to work around this issue, but it may be easier to build a new container where you manually install the software yourself.
-
-## Appendix B: Tips for Building Containers
-
-*Software installation is hard, regardless of whether or not it's in a container.*
 
 ### Finding container images
 
@@ -795,35 +695,6 @@ This tag is always updated to whatever the most recent version is, which means y
 > You can then use the corresponding address `docker://<reponame>/<imagename>:<tagname>` in compatible container technologies to reference that container image.
 >
 > Because `python` is an official repository, the `<reponame>` and `<imagename>` are combined into one.
-
-### Example definition files
-
-Whether for inspiration, education, or just to copy and paste, example definition files are useful for building containers.
-
-Most open source softwares that publish official containers will also provide the original definition file they used for build the container. 
-Note, however, that these builds may be highly optimized and therefore difficult to replicate (or even understand!). 
-
-For more beginner friendly examples of container definition files, check out these sources:
-
-**OSPool documentation**
-
-* [Python example](https://portal.osg-htc.org/documentation/software_examples/python/manage-python-packages/#running-python-jobs-that-use-additional-packages)
-* [R example](https://portal.osg-htc.org/documentation/software_examples/r/tutorial-R-addlibSNA/#create-a-custom-container-with-r-packages)
-* [Julia example](https://portal.osg-htc.org/documentation/software_examples/other_languages_tools/julia-on-osg/#option-1-build-a-container)
-
-**CHTC Recipes**
-
-Example containers are curated in the [CHTC Recipes GitHub repository](https://github.com/CHTC/recipes/software).
-While there are some specific to the CHTC system (particularly the ones involving licensed software), most of the examples should be applicable for use on the OSPool.
-
-* [Conda examples](https://github.com/CHTC/recipes/tree/main/software/Conda)
-* [PyTorch example](https://github.com/CHTC/recipes/tree/main/software/PyTorch)
-
-**Advanced examples**
-
-For something that looks more like a "traditional" Linux installation of a software, see [this example of installing the software SUMO](https://github.com/CHTC/recipes/blob/main/software/SUMO/sumo.def).
-
-The definition files for the OSG curated images can also be involved - [browse the images repository for examples](https://github.com/osg-htc/htc-images/tree/main/htc).
 
 ### Setting PATH
 
@@ -977,9 +848,7 @@ You'll also need to make sure that the software you are deploying is compatible 
 
 If you run into errors on some GPUs but not others, consider the possibility that the issue has to do with differences in the GPU hardware generation.
 
-If you are using the OSPool, we have sorted out most of the backend details to ensure that containers can use the GPUs. To learn how to submit GPU jobs on the OSPool, [read this guide](https://portal.osg-htc.org/documentation/htc_workloads/specific_resource/gpu-jobs/).
-
-If you are using GPUs elsewhere, there are some additional details you may need to sort out in order to launch the container and use the GPU. Instructions for Apptainer are [here](https://apptainer.org/docs/user/latest/gpu.html). 
+At CHTC, we have sorted out most of the backend details to ensure that containers can use the GPUs. To learn how to submit GPU jobs on CHTC, [read this guide](https://chtc.cs.wisc.edu/uw-research-computing/gpu-jobs).
 
 ### Containers and CPU Architectures
 
@@ -1000,7 +869,6 @@ For a discussion of CPU architecture considerations, see...
 * ...for Apptainer, [this manual page](https://apptainer.org/docs/user/latest/docker_and_oci.html#specifying-an-architecture)
 * ...for Docker, [this manual page](https://docs.docker.com/build/building/multi-platform/)
 
-
 ### What about performance?
 
 Is it slower to use a container?
@@ -1019,26 +887,3 @@ The difference is that the capabilities of this container application layer have
 The container and the main OS application layers live side-by-side, each sending their standardized instructions to the same kernel layer. 
 
 When a user interacts with the computer, they interact either with the main OS application layer (outside the container) or with the container application layer (inside the container). Regardless of which one they use, the command a user runs has the same "distance" between the application layer and the hardware layer, and so the speed of execution is comparable. 
-
-There is a little bit of overhead in creating the container's application layer, but this is usually not noticable unless you are frequently `exec`ing the container. 
-
-For example, 
-
-```
-apptainer exec my-container.sif short-command1
-apptainer exec my-container.sif short-command2
-apptainer exec my-container.sif short-command3
-...
-```
-
-is a **bad** idea if you have many short commands to run. In that case, you should **instead do**
-
-```
-apptainer exec my-container.sif script-with-many-short-commands.sh
-```
-
-so that the container is launched once instead of many times.
-
-> If you want the flexibility of launching commands one at a time, but don't want the overhead of repeatedly launching the container, you can run the container as a "service" - the container is launched and remains available in the background for you to send commands to it. The downside is that system resources (usually RAM) are needed to keep the container available in the background.
->
-> Apptainer supports this through [Instances](https://apptainer.org/docs/user/latest/running_services.html), while this approach is actually the default for working with Docker, [as described here](https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/).
