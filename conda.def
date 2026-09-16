@@ -8,4 +8,4 @@ From: condaforge/miniforge3:latest
     conda config --set channel_priority strict
 
     # Install packages directly
-    conda install bwa samtools python=3.10 numpy=1.26 scipy seaborn
+    conda install samtools python=3.10 numpy=1.26 scipy
