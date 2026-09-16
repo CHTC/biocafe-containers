@@ -36,6 +36,16 @@
    condor_submit -i build.sub
    ```
 
+### Building cheatsheet
+
+```
+cat conda.def
+apptainer build conda.sif conda.def
+apptainer shell conda.sif
+exit
+mv conda.sif /staging/n/netid
+```
+
 ## Materials
 
 * Slides: [go.wisc.edu/7ie734](https://go.wisc.edu/7ie734)
